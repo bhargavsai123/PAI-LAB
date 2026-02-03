@@ -6,8 +6,7 @@ jug2 = int(input("Enter Jug 2 Capacity : "))
 aim = int(input("Enter Target : "))
 visited = defaultdict(lambda: False)
 def waterJug(amt1, amt2):
-    
-     if aim > max(jug1, jug2) or aim % gcd(jug1, jug2) != 0:
+    if aim > max(jug1, jug2) or aim % gcd(jug1, jug2) != 0:
         print("No possible solution")
         return
     
@@ -28,3 +27,4 @@ def waterJug(amt1, amt2):
         return False
 print("Steps : ")
 waterJug(0,0)
+
