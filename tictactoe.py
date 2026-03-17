@@ -1,145 +1,90 @@
-class TicTacToe:
-    def __init__(self):
-        self.board = [' '] * 9
-        self.current_player = 'X'
+board = [" "] * 9
 
-    def print_board(self):
-        for i in range(0, 9, 3):
-            print(" " + " | ".join(self.board[i:i+3]) + " ")
-            if i < 6:
-                print("---+---+---")
+def win(p):
+    w = [(0,1,2),(3,4,5),(6,7,8),
+         (0,3,6),(1,4,7),(2,5,8),
+         (0,4,8),(2,4,6)]
+    return any(board[a]==board[b]==board[c]==p for a,b,c in w)
 
-    def is_winner(self, player):
-        # Rows
-        for i in range(0, 9, 3):
-            if self.board[i] == self.board[i+1] == self.board[i+2] == player:
-                return True
+def alphabeta(isMax, alpha, beta):
+    if win("O"): return 1
+    if win("X"): return -1
+    if " " not in board: return 0
 
-        # Columns
-        for i in range(3):
-            if self.board[i] == self.board[i+3] == self.board[i+6] == player:
-                return True
+    if isMax:  # AI (O)
+        best = -100
+        for i in range(9):
+            if board[i] == " ":
+                board[i] = "O"
+                best = max(best, alphabeta(False, alpha, beta))
+                board[i] = " "
+                alpha = max(alpha, best)
+                if beta <= alpha:
+                    break
+        return best
+    else:      # Human (X)
+        best = 100
+        for i in range(9):
+            if board[i] == " ":
+                board[i] = "X"
+                best = min(best, alphabeta(True, alpha, beta))
+                board[i] = " "
+                beta = min(beta, best)
+                if beta <= alpha:
+                    break
+        return best
 
-        # Diagonals
-        if self.board[0] == self.board[4] == self.board[8] == player:
-            return True
-        if self.board[2] == self.board[4] == self.board[6] == player:
-            return True
+def best_move():
+    best = -100
+    move = -1
+    for i in range(9):
+        if board[i] == " ":
+            board[i] = "O"
+            score = alphabeta(False, -100, 100)
+            board[i] = " "
+            if score > best:
+                best = score
+                move = i
+    return move
 
-        return False
+def print_board():
+    print(board[0:3])
+    print(board[3:6])
+    print(board[6:9])
 
-    def is_full(self):
-        return ' ' not in self.board
+while True:
+    print_board()
 
-    def is_game_over(self):
-        return self.is_winner('X') or self.is_winner('O') or self.is_full()
+    # Safe user input
+    while True:
+        try:
+            pos = int(input("Enter your move (0-8): "))
+            if pos < 0 or pos > 8:
+                print("Position must be between 0 and 8.")
+            elif board[pos] != " ":
+                print("Cell already occupied. Try again.")
+            else:
+                break
+        except ValueError:
+            print("Invalid input. Enter a number.")
 
-    def get_available_moves(self):
-        return [i for i, v in enumerate(self.board) if v == ' ']
+    board[pos] = "X"
 
-    def make_move(self, move):
-        if 0 <= move < 9 and self.board[move] == ' ':
-            self.board[move] = self.current_player
-            self.current_player = 'O' if self.current_player == 'X' else 'X'
-            return True
-        return False
-
-    def undo_move(self, move):
-        self.board[move] = ' '
-        self.current_player = 'O' if self.current_player == 'X' else 'X'
-
-
-def evaluate(board):
-    if board.is_winner('O'):   # AI is O (maximizer)
-        return 1
-    if board.is_winner('X'):   # Human is X (minimizer)
-        return -1
-    return 0
-
-
-def minimax(board, depth, alpha, beta, maximizing_player):
-    if board.is_game_over():
-        return evaluate(board)
-
-    if maximizing_player:  # AI (O)
-        max_eval = float('-inf')
-        for move in board.get_available_moves():
-            board.make_move(move)
-            eval_score = minimax(board, depth + 1, alpha, beta, False)
-            board.undo_move(move)
-            max_eval = max(max_eval, eval_score)
-            alpha = max(alpha, eval_score)
-            if beta <= alpha:
-                break   # Beta cutoff
-        return max_eval
-
-    else:  # Human (X)
-        min_eval = float('inf')
-        for move in board.get_available_moves():
-            board.make_move(move)
-            eval_score = minimax(board, depth + 1, alpha, beta, True)
-            board.undo_move(move)
-            min_eval = min(min_eval, eval_score)
-            beta = min(beta, eval_score)
-            if beta <= alpha:
-                break   # Alpha cutoff
-        return min_eval
-
-
-def get_best_move(board):
-    best_score = float('-inf')
-    best_move = None
-
-    # Move ordering (center > corners > edges)
-    ordered_moves = sorted(
-        board.get_available_moves(),
-        key=lambda m: (m == 4, m in [0, 2, 6, 8], m in [1, 3, 5, 7]),
-        reverse=True
-    )
-
-    for move in ordered_moves:
-        board.make_move(move)
-        score = minimax(board, 0, float('-inf'), float('inf'), False)
-        board.undo_move(move)
-
-        if score > best_score:
-            best_score = score
-            best_move = move
-
-    return best_move
-
-
-def main():
-    game = TicTacToe()
-
-    while not game.is_game_over():
-        game.print_board()
-
-        if game.current_player == 'X':
-            while True:
-                try:
-                    move = int(input("Your move (0-8): "))
-                    if game.make_move(move):
-                        break
-                    else:
-                        print("Invalid or occupied position.")
-                except ValueError:
-                    print("Please enter a number 0-8.")
-        else:
-            print("AI (O) is thinking...")
-            move = get_best_move(game)
-            print(f"AI plays at position {move}")
-            game.make_move(move)
-
-    game.print_board()
-
-    if game.is_winner('X'):
+    if win("X"):
+        print_board()
         print("You win!")
-    elif game.is_winner('O'):
+        break
+
+    ai = best_move()
+    board[ai] = "O"
+    print("AI move:", ai)
+
+    if win("O"):
+        print_board()
         print("AI wins!")
-    else:
+        break
+
+    if " " not in board:
+        print_board()
         print("Draw!")
-
-
-if __name__ == "__main__":
-    main()
+        break
